@@ -1,0 +1,7 @@
+fastapi
+uvicorn[standard]
+asyncmy
+bcrypt            
+pydantic            
+pydantic-settings   
+email-validator
