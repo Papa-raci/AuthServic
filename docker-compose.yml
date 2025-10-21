@@ -12,11 +12,11 @@ services:
     ports:
       - "3306:3306"
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-proot_password"]
+      test: ["CMD-SHELL", "mariadb-admin --silent --user=app_user --password=app_password --host=127.0.0.1 ping || mysqladmin ping -h127.0.0.1 -uapp_user -papp_password || exit 1"]
       interval: 5s
       timeout: 3s
       retries: 10
-      start_period: 5s
+      start_period: 10s
 
   api:
     build: .
@@ -24,7 +24,7 @@ services:
       - "8000:8000"
     depends_on:
       db:
-        condition: service_healthy 
+        condition: service_healthy
     env_file:
       - .env
     restart: always

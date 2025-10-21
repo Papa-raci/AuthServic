@@ -1,7 +1,8 @@
-fastapi
+fastapi[standard]
 uvicorn[standard]
 asyncmy
 bcrypt            
 pydantic            
-pydantic-settings   
+pydantic-settings
 email-validator
+pyjwt[crypto]

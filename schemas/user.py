@@ -10,3 +10,10 @@ class UserCreate(BaseModel):
         if self.password != self.password_confirm:
             raise ValueError('Пароли не совпадают')
         return self
+    
+class TokenResponse(BaseModel):
+    access_token: str
+    refresh_token: str
+
+class RefreshTokenRequest(BaseModel):
+    refresh_token: str
