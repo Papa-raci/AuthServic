@@ -1,58 +1,55 @@
 from fastapi import APIRouter, Depends, HTTPException, status
+from core.exceptions import InvalidCredentials, InvalidToken, UserAlreadyExists
 from schemas.user import RefreshTokenRequest, TokenResponse, UserCreate
-from core.security import create_access_token, create_refresh_token, decode_token, hash_password, verify_password
-from db.repository import UserRepository
 from fastapi.security import OAuth2PasswordRequestForm
-from .deps import get_user_repository
+from services.auth_service import AuthService
+from .deps import get_auth_service
 
 router = APIRouter()
 
 @router.post("/sign-up", status_code=status.HTTP_201_CREATED)
-async def sign_up(user_in: UserCreate, repo: UserRepository = Depends(get_user_repository)):
-    hashed_pwd = hash_password(user_in.password)
-    user = await repo.create_user(user_in.email, hashed_pwd)
-    if not user:
+async def sign_up(
+    user_in: UserCreate,
+    auth_service: AuthService = Depends(get_auth_service)  
+):
+    try:
+        await auth_service.register_user(
+            email=user_in.email, password=user_in.password
+        )
+    except UserAlreadyExists as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Пользователь с таким email уже существует"
+            detail=str(e)
         )
     return {"message": "Пользователь успешно зарегистрирован"}
 
 @router.post("/login", response_model=TokenResponse)
 async def login(
     form_data: OAuth2PasswordRequestForm = Depends(),
-    repo: UserRepository = Depends(get_user_repository)
+    auth_service: AuthService = Depends(get_auth_service)
 ):
-    user = await repo.get_user_by_email(form_data.username)
-
-    if not user or not verify_password(form_data.password, user['hashed_password']):
+    try:
+        tokens = await auth_service.login_user(
+            email=form_data.username, password=form_data.password
+        )
+    except InvalidCredentials as e:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Неверный email или пароль"
+            detail=str(e)
         )
-    
-    access_token = create_access_token(data={"sub": user['email']})
-    refresh_token = create_refresh_token(data={"sub": user['email']})
-    return {"access_token": access_token, "refresh_token": refresh_token}
+    return {**tokens, "token_type": "bearer"}
 
 @router.post("/refresh", response_model=TokenResponse)
 async def refresh(
     token_in: RefreshTokenRequest,
-    repo: UserRepository = Depends(get_user_repository)
+    auth_service: AuthService = Depends(get_auth_service)
 ):
-    payload = decode_token(token_in.refresh_token)
-    if not payload or not payload.get("sub"):
+    try:
+        tokens = await auth_service.refresh_tokens(token_in.refresh_token)
+    except InvalidToken as e:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Недействительный refresh токен"
-        )
-    user = await repo.get_user_by_email(payload["sub"])
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Пользователь не найден"
-        )
-    access_token = create_access_token(data={"sub": user['email']})
-    refresh_token = create_refresh_token(data={"sub": user['email']})   
-    return {"access_token": access_token, "refresh_token": refresh_token}
+            detail=str(e)
+        ) 
+    return {**tokens, "token_type": "bearer"}
     

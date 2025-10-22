@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from contextlib import asynccontextmanager
-from api import auth
+from api import auth, protected
 from db.database import connect_to_db, close_db_connection
 
 @asynccontextmanager
@@ -12,3 +12,4 @@ async def lifespan(app: FastAPI):
 app = FastAPI(lifespan=lifespan)
 
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["Auth"])
+app.include_router(protected.router, prefix="/api/v1/protected-scv", tags=["Protected"])
