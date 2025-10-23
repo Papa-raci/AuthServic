@@ -17,3 +17,6 @@ class TokenResponse(BaseModel):
 
 class RefreshTokenRequest(BaseModel):
     refresh_token: str
+    
+class MessageResponse(BaseModel):
+    message: str

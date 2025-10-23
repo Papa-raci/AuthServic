@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from core.exceptions import InvalidToken
+from schemas.user import MessageResponse
 from services.auth_service import AuthService
 from .deps import get_auth_service
 
@@ -21,6 +22,8 @@ async def get_current_user(
         )
     return user
     
-@router.get("/secret-data")
+@router.get("/secret-data", response_model=MessageResponse)
 async def get_secret_data(current_user: dict = Depends(get_current_user)):
-    return {"message": f"Это секретные данные для {current_user['email']}"}
+    return MessageResponse(
+        message=f"Это секретные данные для пользователя {current_user['email']}"
+    )

@@ -1,13 +1,13 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from core.exceptions import InvalidCredentials, InvalidToken, UserAlreadyExists
-from schemas.user import RefreshTokenRequest, TokenResponse, UserCreate
+from schemas.user import MessageResponse, RefreshTokenRequest, TokenResponse, UserCreate
 from fastapi.security import OAuth2PasswordRequestForm
 from services.auth_service import AuthService
 from .deps import get_auth_service
 
 router = APIRouter()
 
-@router.post("/sign-up", status_code=status.HTTP_201_CREATED)
+@router.post("/sign-up", response_model=MessageResponse)
 async def sign_up(
     user_in: UserCreate,
     auth_service: AuthService = Depends(get_auth_service)  
@@ -21,7 +21,7 @@ async def sign_up(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e)
         )
-    return {"message": "Пользователь успешно зарегистрирован"}
+    return MessageResponse(message="Пользователь успешно зарегистрирован")
 
 @router.post("/login", response_model=TokenResponse)
 async def login(
@@ -37,7 +37,7 @@ async def login(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail=str(e)
         )
-    return {**tokens, "token_type": "bearer"}
+    return tokens
 
 @router.post("/refresh", response_model=TokenResponse)
 async def refresh(
@@ -51,5 +51,5 @@ async def refresh(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail=str(e)
         ) 
-    return {**tokens, "token_type": "bearer"}
+    return tokens
     
