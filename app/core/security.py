@@ -1,7 +1,7 @@
 import bcrypt
 from datetime import datetime, timedelta, timezone
 import jwt
-from core.config import settings
+from app.core.config import settings
 
 def hash_password(password: str) -> str:
     """Хеширует пароль с использованием bcrypt."""

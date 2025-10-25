@@ -1,6 +1,6 @@
-from core.exceptions import InvalidCredentials, InvalidToken, UserAlreadyExists
-from core.security import create_access_token, create_refresh_token, decode_token, hash_password, verify_password
-from db.repository import UserRepository
+from app.core.exceptions import InvalidCredentials, InvalidToken, UserAlreadyExists
+from app.core.security import create_access_token, create_refresh_token, decode_token, hash_password, verify_password
+from app.db.repository import UserRepository
 
 
 class AuthService:
@@ -21,7 +21,7 @@ class AuthService:
     async def login_user(self, email: str, password: str) -> dict:
         """Аутентификация пользователя."""
         user = await self.user_repo.get_user_by_email(email)
-        if not user and not verify_password(password, user['hashed_password']):
+        if not user or not verify_password(password, user['hashed_password']):
             raise InvalidCredentials("Неверный email или пароль")
         
         access_token = create_access_token(data={"sub": user['email']})

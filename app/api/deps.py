@@ -1,7 +1,7 @@
 from fastapi import Depends
-from db.database import get_db_pool
-from db.repository import UserRepository
-from services.auth_service import AuthService
+from app.db.database import get_db_pool
+from app.db.repository import UserRepository
+from app.services.auth_service import AuthService
 
 def get_user_repository() -> UserRepository:
     """Зависимость, которая предоставляет экземпляр UserRepository."""

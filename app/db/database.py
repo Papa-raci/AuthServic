@@ -1,5 +1,5 @@
 import asyncmy
-from core.config import settings
+from app.core.config import settings
 
 pool: asyncmy.Pool = None
 

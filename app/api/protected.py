@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
-from core.exceptions import InvalidToken
-from schemas.user import MessageResponse
-from services.auth_service import AuthService
-from .deps import get_auth_service
+from app.api.deps import get_auth_service
+from app.core.exceptions import InvalidToken
+from app.schemas.user import MessageResponse
+from app.services.auth_service import AuthService
 
 router = APIRouter()
 
