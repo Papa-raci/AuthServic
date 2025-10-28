@@ -30,6 +30,9 @@ services:
     restart: always
     volumes:
       - ./app:/app/app
+      - ./tests:/app/tests
+    environment:
+      - PYTHONPATH=/app
 
 volumes:
   mariadb_data:

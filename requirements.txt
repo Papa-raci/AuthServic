@@ -6,3 +6,9 @@ pydantic
 pydantic-settings
 email-validator
 pyjwt[crypto]
+
+pytest
+pytest-asyncio
+httpx
+pytest-mock
+pytest-cov

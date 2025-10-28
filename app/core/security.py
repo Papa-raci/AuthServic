@@ -1,7 +1,9 @@
+import uuid
 import bcrypt
 from datetime import datetime, timedelta, timezone
 import jwt
 from app.core.config import settings
+from app.core.exceptions import InvalidToken
 
 def hash_password(password: str) -> str:
     """Хеширует пароль с использованием bcrypt."""
@@ -18,14 +20,22 @@ def create_access_token(data: dict) -> str:
     """Создает JWT access токен."""
     to_encode = data.copy()
     expire = datetime.now(timezone.utc) + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
-    to_encode.update({"exp": expire})
+    to_encode.update({
+        "exp": expire,
+        "iat": datetime.now(timezone.utc),
+        "jti": str(uuid.uuid4())
+    })
     return jwt.encode(to_encode, settings.JWT_PRIVATE_KEY, algorithm=settings.JWT_ALGORITHM)
 
 def create_refresh_token(data: dict) -> str:
     """Создает JWT refresh токен."""
     to_encode = data.copy()
     expire = datetime.now(timezone.utc) + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
-    to_encode.update({"exp": expire})
+    to_encode.update({
+        "exp": expire,
+        "iat": datetime.now(timezone.utc),
+        "jti": str(uuid.uuid4()) 
+    })
     return jwt.encode(to_encode, settings.JWT_PRIVATE_KEY, algorithm=settings.JWT_ALGORITHM)
 
 def decode_token(token: str) -> dict:
@@ -33,8 +43,8 @@ def decode_token(token: str) -> dict:
     try:
         payload = jwt.decode(token, settings.JWT_PUBLIC_KEY, algorithms=[settings.JWT_ALGORITHM])
     except jwt.ExpiredSignatureError:
-        raise ValueError("Токен истек")
+        raise InvalidToken("Токен истек")
     except jwt.InvalidTokenError:
-        raise ValueError("Недействительный токен")
+        raise InvalidToken("Недействительный токен")
     return payload
 
