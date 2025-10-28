@@ -1,6 +1,6 @@
 from typing import AsyncGenerator
 from unittest.mock import AsyncMock, MagicMock
-import asyncmy
+import asyncpg
 import pytest
 import pytest_asyncio
 from httpx import AsyncClient, ASGITransport
@@ -14,74 +14,71 @@ from app.main import app
 from app.services.auth_service import AuthService
 
 TEST_DB_NAME = "test_auth_db"
-ROOT_PASSWORD = "root_password"
+ROOT_USER = "app_user"
+ROOT_PASSWORD = "app_password"
 
 
 @pytest_asyncio.fixture(scope="session")
 async def setup_test_db():
     """Создает тестовую БД перед всеми тестами и удаляет после."""
-    conn = await asyncmy.connect(
+    conn = await asyncpg.connect(
         host=settings.DATABASE_HOST,
         port=settings.DATABASE_PORT,
-        user="root",
-        password=ROOT_PASSWORD
+        user=ROOT_USER,
+        password=ROOT_PASSWORD,
+        database="postgres"
     )
 
-    async with conn.cursor() as cursor:
-        await cursor.execute(f"DROP DATABASE IF EXISTS {TEST_DB_NAME}")
-        await cursor.execute(f"CREATE DATABASE {TEST_DB_NAME}")
-    conn.close()
+    await conn.execute(f"DROP DATABASE IF EXISTS {TEST_DB_NAME}")
+    await conn.execute(f"CREATE DATABASE {TEST_DB_NAME}")
+    await conn.close()
     
     yield
 
-    conn = await asyncmy.connect(
+    conn = await asyncpg.connect(
         host=settings.DATABASE_HOST,
         port=settings.DATABASE_PORT,
-        user="root",
+        user=ROOT_USER,
         password=ROOT_PASSWORD,
+        database="postgres"
     )
-    async with conn.cursor() as cursor:
-        await cursor.execute(f"DROP DATABASE IF EXISTS {TEST_DB_NAME}")
-    conn.close()
+    await conn.execute(f"DROP DATABASE IF EXISTS {TEST_DB_NAME}")
+    await conn.close()
 
 
 @pytest_asyncio.fixture
-async def test_db_pool(setup_test_db) -> AsyncGenerator[asyncmy.Pool, None]:
+async def test_db_pool(setup_test_db) -> AsyncGenerator[asyncpg.Pool, None]:
     """Создает пул соединений и накатывает схему перед каждым тестом (scope='function' по умолчанию)."""
-    pool = await asyncmy.create_pool(
+    pool = await asyncpg.create_pool(
         host=settings.DATABASE_HOST,
         port=settings.DATABASE_PORT,
         user=settings.DATABASE_USER,
         password=settings.DATABASE_PASSWORD,
-        db=TEST_DB_NAME,
-        autocommit=True,
+        database=TEST_DB_NAME
     )
 
     async with pool.acquire() as conn:
-        async with conn.cursor() as cursor:
-            await cursor.execute("""
-                CREATE TABLE IF NOT EXISTS users (
-                    id INT AUTO_INCREMENT PRIMARY KEY,
-                    email VARCHAR(255) UNIQUE NOT NULL,
-                    hashed_password VARCHAR(255) NOT NULL,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                );
-            """)
+            await conn.execute("""
+            CREATE TABLE IF NOT EXISTS users (
+                id SERIAL PRIMARY KEY,
+                email VARCHAR(255) UNIQUE NOT NULL,
+                hashed_password VARCHAR(255) NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+        """)
 
     database.pool = pool
     
     yield pool
 
     async with pool.acquire() as conn:
-        async with conn.cursor() as cursor:
-            await cursor.execute("TRUNCATE TABLE users")
+        await conn.execute("TRUNCATE TABLE users RESTART IDENTITY CASCADE")
 
-    pool.close()
-    await pool.wait_closed()
+    await pool.close()
 
 
 @pytest_asyncio.fixture
-async def test_app(test_db_pool: asyncmy.Pool) -> FastAPI:
+async def test_app(test_db_pool: asyncpg.Pool) -> FastAPI:
     """Создает приложение FastAPI, использующее тестовую БД."""
     async def override_get_db_pool():
         return test_db_pool

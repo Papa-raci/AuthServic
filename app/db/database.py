@@ -1,29 +1,32 @@
-import asyncmy
+import asyncpg
 from app.core.config import settings
 
-pool: asyncmy.Pool = None
+pool: asyncpg.Pool = None
 
 async def connect_to_db():
     global pool
-    pool = await asyncmy.create_pool(
-        host=settings.DATABASE_HOST, port=settings.DATABASE_PORT,
-        user=settings.DATABASE_USER, password=settings.DATABASE_PASSWORD,
-        db=settings.DATABASE_NAME, autocommit=True
+    pool = await asyncpg.create_pool(
+        host=settings.DATABASE_HOST,
+        port=settings.DATABASE_PORT,
+        user=settings.DATABASE_USER,
+        password=settings.DATABASE_PASSWORD,
+        database=settings.DATABASE_NAME,
+        min_size=1,
+        max_size=10
     )
     async with pool.acquire() as conn:
-        async with conn.cursor() as cursor:
-            await cursor.execute("""
-                CREATE TABLE IF NOT EXISTS users (
-                    id INT AUTO_INCREMENT PRIMARY KEY,
-                    email VARCHAR(255) UNIQUE NOT NULL,
-                    hashed_password VARCHAR(255) NOT NULL,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                );
-            """)
+        await conn.execute("""
+            CREATE TABLE IF NOT EXISTS users (
+                id SERIAL PRIMARY KEY,
+                email VARCHAR(255) UNIQUE NOT NULL,
+                hashed_password VARCHAR(255) NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+        """)
 
 async def close_db_connection():
-    pool.close()
-    await pool.wait_closed()
+    if pool:
+        await pool.close()
 
-def get_db_pool() -> asyncmy.Pool:
+def get_db_pool() -> asyncpg.Pool:
     return pool

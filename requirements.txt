@@ -1,6 +1,7 @@
 fastapi[standard]
 uvicorn[standard]
-asyncmy
+asyncpg
+psycopg2-binary
 bcrypt            
 pydantic            
 pydantic-settings

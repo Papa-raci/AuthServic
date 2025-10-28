@@ -1,4 +1,4 @@
-!/bin/bash
+#!/bin/bash
 set -e  # остановка при ошибках
 
 cd "$(dirname "$0")/.." || exit 1
