@@ -1,0 +1,15 @@
+fastapi[standard]
+uvicorn[standard]
+asyncpg
+psycopg2-binary
+bcrypt            
+pydantic            
+pydantic-settings
+email-validator
+pyjwt[crypto]
+
+pytest
+pytest-asyncio
+httpx
+pytest-mock
+pytest-cov
